@@ -3,16 +3,14 @@ package main
 import (
 	"crypto/tls"
 	_ "embed"
+	"encoding/base64"
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
-	"sync"
-	"io"
-	"encoding/json"
-	"encoding/base64"
-	"time"
-	"regexp"
 	"strings"
-	"fmt"
+	"sync"
+	"time"
 )
 
 //go:embed server.key
@@ -23,12 +21,12 @@ var crt []byte
 
 func newLicense(nonce string) []byte {
 	license := map[string]interface{}{
-		"success": true,
-		"expires_at": time.Now().AddDate(30, 0, 0).UTC().Format("2006-01-02T15:04:05Z"),
-		"billing_type": "stripe",
-		"max_seats": 99999,
-		"license_checked_at": time.Now().UTC().Format("2006-01-02T15:04:05Z"),
-		"nonce": nonce,
+		"success":                true,
+		"expires_at":             time.Now().AddDate(30, 0, 0).UTC().Format("2006-01-02T15:04:05Z"),
+		"billing_type":           "stripe",
+		"max_seats":              99999,
+		"license_checked_at":     time.Now().UTC().Format("2006-01-02T15:04:05Z"),
+		"nonce":                  nonce,
 		"feature_flag_overrides": map[string]interface{}{},
 		"all_features": []string{
 			"UnlimitedQueries",
@@ -44,16 +42,16 @@ func newLicense(nonce string) []byte {
 			"UnlimitedModules",
 		},
 		"available_features": []string{},
-		"trial_expires_at": nil,
-		"ssop_user_email": "junruzhu@lilith.com",
+		"trial_expires_at":   nil,
+		"ssop_user_email":    "junruzhu@lilith.com",
 	}
 	bs, err := json.Marshal(license)
 	if err != nil {
 		log.Fatal("marshal license err: ", err)
 	}
-	
+
 	body := map[string]interface{}{
-		"payload": shape(base64.StdEncoding.EncodeToString(bs), 60),
+		"payload":   shape(base64.StdEncoding.EncodeToString(bs), 60),
 		"signature": "spP3mDHpDhF3NKwtig9++JJShv3HtGmUOHPHiT950F5r/NxLIM+XIfoxbnYL\nmaGdqm9aZH/qe95yBx/s0FYoeNb1w3jLd7qJm+/LfxayRQoLhrVJHQpH9XYw\nrIrTbXtS3iH7NIZiPzVlG/X1DXF6fJtsuMTjmlVoFLv3OtlYE2Fha7sZyLSa\n44CDbxOH4vigWspH6TdwUWLqMfNvkIg38L/9+Se+gAjuWEXTtVBCten1Bnv1\niEjvkrxfsL9tljfHL/+WK7BV5Ma8paXAOuXrP0l2BYmsvZrV+FOo/91ot2eE\n/+1SoWGO+hqfL9YHB/VXR3sakV+ABU+21Mv6Pcq9SQ==\n",
 	}
 	result, err := json.Marshal(body)
@@ -63,10 +61,20 @@ func newLicense(nonce string) []byte {
 	return result
 }
 
+func splitBy(s string, n int) []string {
+	times := len(s) / n
+	last := len(s) % n
+	lines := make([]string, 0, times+1)
+	for i := 0; i < times; i++ {
+		lines = append(lines, s[i*n:(i+1)*n])
+	}
+	lines = append(lines, s[n*times:n*times+last])
+	return lines
+}
+
 func shape(src string, width int) string {
-	re := regexp.MustCompile(fmt.Sprintf(`(\S{%d})`, width)) 
-	lines := re.FindAllString(src, -1)
-	return strings.Join(lines, "\n")+"\n"
+	lines := splitBy(src, width)
+	return strings.Join(lines, "\n") + "\n"
 }
 
 func LicenseServer(w http.ResponseWriter, req *http.Request) {
