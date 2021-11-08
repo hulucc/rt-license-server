@@ -124,7 +124,7 @@ func main() {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		server := http.Server{Addr: ":8099"}
+		server := http.Server{Addr: ":80"}
 		log.Println("http server starting")
 		if err := server.ListenAndServe(); err != nil {
 			log.Fatal("http server err: ", err)
