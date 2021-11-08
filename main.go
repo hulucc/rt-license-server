@@ -40,6 +40,7 @@ func newLicense(nonce string) []byte {
 			"Styling",
 			// "5SeatLimit",
 			"UnlimitedModules",
+			"Themes",
 		},
 		"available_features": []string{},
 		"trial_expires_at":   nil,
