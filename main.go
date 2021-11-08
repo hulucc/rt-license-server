@@ -13,8 +13,6 @@ import (
 	"regexp"
 	"strings"
 	"fmt"
-
-	"github.com/NYTimes/gziphandler"
 )
 
 //go:embed server.key
@@ -81,9 +79,13 @@ func LicenseServer(w http.ResponseWriter, req *http.Request) {
 				if err := json.Unmarshal(data, &args); err == nil {
 					if nonce, ok := args["nonce"].(string); ok {
 						body := newLicense(nonce)
-						w.Header().Set("Content-Type", "application/json")
-						w.Write(body)
-						return
+						if f, ok := w.(http.Flusher); ok {
+							w.Header().Set("Content-Type", "application/json; charset=utf-8")
+							w.Header().Set("X-Content-Type-Options", "nosniff")
+							w.Write(body)
+							f.Flush()
+							return
+						}
 					}
 				}
 			}
@@ -103,7 +105,7 @@ func EchoServer(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	http.Handle("/v1/licensing/verify_key", gziphandler.GzipHandler(http.HandlerFunc(LicenseServer)))
+	http.HandleFunc("/v1/licensing/verify_key", LicenseServer)
 	http.HandleFunc("/v2/p", EchoServer)
 	cert, err := tls.X509KeyPair(crt, key)
 	if err != nil {
