@@ -13,6 +13,8 @@ import (
 	"regexp"
 	"strings"
 	"fmt"
+
+	"github.com/NYTimes/gziphandler"
 )
 
 //go:embed server.key
@@ -101,7 +103,7 @@ func EchoServer(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/v1/licensing/verify_key", LicenseServer)
+	http.Handle("/v1/licensing/verify_key", gziphandler.GzipHandler(http.HandlerFunc(LicenseServer)))
 	http.HandleFunc("/v2/p", EchoServer)
 	cert, err := tls.X509KeyPair(crt, key)
 	if err != nil {
