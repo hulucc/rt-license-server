@@ -23,7 +23,7 @@ func newLicense(nonce string) []byte {
 	license := map[string]interface{}{
 		"success":                true,
 		"expires_at":             time.Now().AddDate(30, 0, 0).UTC().Format("2006-01-02T15:04:05Z"),
-		"billing_type":           "stripe",
+		"billing_type":           "enterprise",
 		"max_seats":              99999,
 		"license_checked_at":     time.Now().UTC().Format("2006-01-02T15:04:05Z"),
 		"nonce":                  nonce,
